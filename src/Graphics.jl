@@ -1,3 +1,9 @@
+if VERSION < v"0.4-dev"
+
+const Graphics = Base.Graphics
+
+else
+
 module Graphics
 
 import Base: fill, norm, scale
@@ -314,3 +320,4 @@ function polygon(self::GraphicsContext, points::AbstractVector)
 end
 
 end # module
+end
