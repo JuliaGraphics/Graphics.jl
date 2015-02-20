@@ -1,7 +1,6 @@
 using Graphics
 using Base.Test
 
-using Base.Graphics
 # Part 1. Geometry
 
 ## Point-vector identity (typealias)
