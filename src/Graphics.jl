@@ -1,16 +1,66 @@
 module Graphics
 
-import Base: fill, norm, scale
-
 export
     # Part 1. 2D Geometry
     Vec2, Point, BoundingBox,
+
     # limits in world coordinates
     isinside, xmin, xmax, ymin, ymax, center, xrange, yrange,
     aspect_ratio, with_aspect_ratio, diagonal, shift, deform,
-    # TODO: more
 
-    # TODO: 3D geometry
+    # Part 2. 2D Drawing
+    # device and context
+    GraphicsDevice, GraphicsContext, creategc, getgc,
+
+    # width, height are in user (world) coordinates for geometric objects,
+    # but in device coordinates for GraphicsDevice, GraphicsContext, and
+    # other concrete things like windows and widgets.
+    width, height,
+
+    # drawing attribute manipulation
+    save, restore, set_line_width, set_dash, set_source_rgb, set_source_rgba,
+    set_source,
+
+    # coordinate systems
+    reset_transform, set_coords, rotate, scale, translate, user_to_device!,
+    device_to_user!, user_to_device_distance!, device_to_user_distance!,
+    user_to_device, device_to_user,
+
+    # clipping
+    clip, clip_preserve, reset_clip,
+
+    # path primitives
+    move_to, line_to, rel_line_to, rel_move_to, new_path, new_sub_path,
+    close_path, arc,
+
+    # fill and stroke
+    fill, fill_preserve, paint, stroke, stroke_preserve,
+    stroke_transformed, stroke_transformed_preserve,
+
+    # derived path operations
+    rectangle, circle, polygon
+
+macro mustimplement(sig)
+    fname = sig.args[1]
+    arg1 = sig.args[2]
+    if isa(arg1,Expr)
+        arg1 = arg1.args[1]
+    end
+    :($(esc(sig)) = error(typeof($(esc(arg1))),
+                          " must implement ", $(Expr(:quote,fname))))
+end
+
+import Base: fill, norm, scale
+
+if VERSION < v"0.4.0-dev+3275"
+    import Base.Graphics:
+
+    # Part 1. 2D Geometry
+    Vec2, Point, BoundingBox,
+
+    # limits in world coordinates
+    isinside, xmin, xmax, ymin, ymax, center, xrange, yrange,
+    aspect_ratio, with_aspect_ratio, diagonal, shift, deform,
 
     # Part 2. 2D Drawing
     # device and context
@@ -43,10 +93,7 @@ export
     # derived path operations
     rectangle, circle, polygon
 
-    # TODO: text drawing API
-
-    # TODO: rendering pipeline API
-
+else
 
 # Part 1. geometric primitives
 
@@ -84,25 +131,25 @@ end
 BoundingBox() = BoundingBox(NaN, NaN, NaN, NaN)
 
 function BoundingBox(points::Point...)
-    xmin, xmax, ymin, ymax = NaN, NaN, NaN, NaN
+    xxmin, xxmax, yymin, yymax = NaN, NaN, NaN, NaN
     for p in points
-        xmin = min(xmin, p.x)
-        xmax = max(xmax, p.x)
-        ymin = min(ymin, p.y)
-        ymax = max(ymax, p.y)
+        xxmin = min(xxmin, p.x)
+        xxmax = max(xxmax, p.x)
+        yymin = min(yymin, p.y)
+        yymax = max(yymax, p.y)
     end
-    return BoundingBox(xmin, xmax, ymin, ymax)
+    return BoundingBox(xxmin, xxmax, yymin, yymax)
 end
 
 function BoundingBox(bboxes::BoundingBox...)
-    xmin, xmax, ymin, ymax = NaN, NaN, NaN, NaN
+    xxmin, xxmax, yymin, yymax = NaN, NaN, NaN, NaN
     for bb in bboxes
-        xmin = min(xmin, bb.xmin)
-        xmax = max(xmax, bb.xmax)
-        ymin = min(ymin, bb.ymin)
-        ymax = max(ymax, bb.ymax)
+        xxmin = min(xxmin, bb.xmin)
+        xxmax = max(xxmax, bb.xmax)
+        yymin = min(yymin, bb.ymin)
+        yymax = max(yymax, bb.ymax)
     end
-    return BoundingBox(xmin, xmax, ymin, ymax)
+    return BoundingBox(xxmin, xxmax, yymin, yymax)
 end
 
 width(bb::BoundingBox) = bb.xmax - bb.xmin
@@ -171,18 +218,7 @@ end
 isinside(bb::BoundingBox, x, y) = (bb.xmin <= x <= bb.xmax) && (bb.ymin <= y <= bb.ymax)
 isinside(bb::BoundingBox, p::Point) = isinside(bb, p.x, p.y)
 
-
 # Part 2. Drawing
-
-macro mustimplement(sig)
-    fname = sig.args[1]
-    arg1 = sig.args[2]
-    if isa(arg1,Expr)
-        arg1 = arg1.args[1]
-    end
-    :($(esc(sig)) = error(typeof($(esc(arg1))),
-                          " must implement ", $(Expr(:quote,fname))))
-end
 
 # a graphics output device; can create GraphicsContexts
 abstract GraphicsDevice
@@ -200,6 +236,7 @@ abstract GraphicsContext
 
 @mustimplement width(gc::GraphicsContext)
 @mustimplement height(gc::GraphicsContext)
+
 # getgc() - get a GraphicsContext from something that might be drawable
 getgc(gc::GraphicsContext) = gc
 
@@ -225,7 +262,9 @@ function set_coords(c::GraphicsContext, x, y, w, h, l, r, t, b)
     end
     c
 end
-set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox) = set_coords(c, device.xmin, device.ymin, width(device), height(device), user.xmin, user.xmax, user.ymin, user.ymax)
+set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox) =
+    set_coords(c, device.xmin, device.ymin, width(device), height(device),
+               user.xmin, user.xmax, user.ymin, user.ymax)
 
 @mustimplement save(gc::GraphicsContext)
 @mustimplement restore(gc::GraphicsContext)
@@ -291,7 +330,8 @@ function rectangle(gc::GraphicsContext, x::Real, y::Real, width::Real, height::R
     rel_line_to(gc, -width, 0)
     close_path(gc)
 end
-rectangle(gc::GraphicsContext, user::BoundingBox) = rectangle(gc, user.xmin, user.ymin, width(user), height(user))
+rectangle(gc::GraphicsContext, user::BoundingBox) =
+    rectangle(gc, user.xmin, user.ymin, width(user), height(user))
 
 circle(ctx::GraphicsContext, x::Real, y::Real, r::Real) =
     arc(ctx, x, y, r, 0., 2pi)
@@ -312,5 +352,7 @@ function polygon(self::GraphicsContext, points::AbstractVector)
     end
     close_path(self)
 end
+
+end # if VERSION
 
 end # module
