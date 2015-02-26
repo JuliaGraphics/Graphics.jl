@@ -50,9 +50,26 @@ macro mustimplement(sig)
                           " must implement ", $(Expr(:quote,fname))))
 end
 
+macro ver(ex)
+   if (ex.head !== :if ||
+       ex.args[1].head !== :comparison ||
+       !(ex.args[1].args[1] === :VERSION ||
+         ex.args[1].args[end] === :VERSION) ||
+       !(op = ex.args[1].args[2];
+         op in (:(<), :(<=), :(>), :(=>))))
+       throw(ArgumentError("Invalid @ver macro"))
+   end
+   if eval(ex.args[1])
+       return esc(ex.args[2])
+   else
+       return esc(ex.args[3])
+   end
+end
+
 import Base: fill, norm, scale
 
-if VERSION < v"0.4.0-dev+3275"
+
+@ver if VERSION < v"0.4.0-dev+3275"
     import Base.Graphics:
 
     # Part 1. 2D Geometry
@@ -131,25 +148,25 @@ end
 BoundingBox() = BoundingBox(NaN, NaN, NaN, NaN)
 
 function BoundingBox(points::Point...)
-    xxmin, xxmax, yymin, yymax = NaN, NaN, NaN, NaN
+    xmin, xmax, ymin, ymax = NaN, NaN, NaN, NaN
     for p in points
-        xxmin = min(xxmin, p.x)
-        xxmax = max(xxmax, p.x)
-        yymin = min(yymin, p.y)
-        yymax = max(yymax, p.y)
+        xmin = min(xmin, p.x)
+        xmax = max(xmax, p.x)
+        ymin = min(ymin, p.y)
+        ymax = max(ymax, p.y)
     end
-    return BoundingBox(xxmin, xxmax, yymin, yymax)
+    return BoundingBox(xmin, xmax, ymin, ymax)
 end
 
 function BoundingBox(bboxes::BoundingBox...)
-    xxmin, xxmax, yymin, yymax = NaN, NaN, NaN, NaN
+    xmin, xmax, ymin, ymax = NaN, NaN, NaN, NaN
     for bb in bboxes
-        xxmin = min(xxmin, bb.xmin)
-        xxmax = max(xxmax, bb.xmax)
-        yymin = min(yymin, bb.ymin)
-        yymax = max(yymax, bb.ymax)
+        xmin = min(xmin, bb.xmin)
+        xmax = max(xmax, bb.xmax)
+        ymin = min(ymin, bb.ymin)
+        ymax = max(ymax, bb.ymax)
     end
-    return BoundingBox(xxmin, xxmax, yymin, yymax)
+    return BoundingBox(xmin, xmax, ymin, ymax)
 end
 
 width(bb::BoundingBox) = bb.xmax - bb.xmin
