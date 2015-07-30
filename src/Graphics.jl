@@ -1,6 +1,6 @@
 module Graphics
 
-import Base: fill, norm, scale
+import Base: +, -, *, /, &, fill, norm, scale
 
 export
     # Part 1. 2D Geometry
