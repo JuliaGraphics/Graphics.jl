@@ -1,6 +1,7 @@
 module Graphics
 
 import Base: +, -, *, /, &, fill, norm, scale
+using Colors
 
 export
     # Part 1. 2D Geometry
@@ -260,6 +261,12 @@ end
 @mustimplement set_source_rgb(gc::GraphicsContext, ::Real, ::Real, ::Real)
 @mustimplement set_source_rgba(gc::GraphicsContext, ::Real, ::Real, ::Real, ::Real)
 @mustimplement set_source(gc::GraphicsContext, src)
+
+# set source color as a Color
+function set_source(gc::GraphicsContext, c::Color)
+    rgb = convert(RGB, c)
+    set_source_rgb(gc, rgb.r, rgb.g, rgb.b)
+end
 
 @mustimplement clip(gc::GraphicsContext)
 @mustimplement clip_preserve(gc::GraphicsContext)
