@@ -2,8 +2,13 @@ VERSION >= v"0.4.0-dev+6521" && __precompile__()
 
 module Graphics
 
-import Base: +, -, *, /, &, fill, norm, scale
+import Base: +, -, *, /, &, fill, norm
 using Colors
+using Compat
+
+if isdefined(Base, :scale)
+    import Base: scale
+end
 
 export
     # Part 1. 2D Geometry
@@ -58,7 +63,7 @@ immutable Vec2
     y::Float64
 end
 
-typealias Point Vec2
+const Point = Vec2
 
 (+)(a::Vec2, b::Vec2) = Vec2(a.x + b.x, a.y + b.y)
 (-)(a::Vec2, b::Vec2) = Vec2(a.x - b.x, a.y - b.y)
@@ -86,8 +91,8 @@ end
 
 BoundingBox() = BoundingBox(NaN, NaN, NaN, NaN)
 
-function BoundingBox(points::Point...)
-    xmin, xmax, ymin, ymax = NaN, NaN, NaN, NaN
+function BoundingBox(p0::Point, points::Point...)
+    xmin, xmax, ymin, ymax = p0.x, p0.x, p0.y, p0.y
     for p in points
         xmin = min(xmin, p.x)
         xmax = max(xmax, p.x)
@@ -97,8 +102,8 @@ function BoundingBox(points::Point...)
     return BoundingBox(xmin, xmax, ymin, ymax)
 end
 
-function BoundingBox(bboxes::BoundingBox...)
-    xmin, xmax, ymin, ymax = NaN, NaN, NaN, NaN
+function BoundingBox(bb0::BoundingBox, bboxes::BoundingBox...)
+    xmin, xmax, ymin, ymax = bb0.xmin, bb0.xmax, bb0.ymin, bb0.ymax
     for bb in bboxes
         xmin = min(xmin, bb.xmin)
         xmax = max(xmax, bb.xmax)
@@ -188,7 +193,7 @@ macro mustimplement(sig)
 end
 
 # a graphics output device; can create GraphicsContexts
-abstract GraphicsDevice
+@compat abstract type GraphicsDevice end
 
 @mustimplement width(gd::GraphicsDevice)
 @mustimplement height(gd::GraphicsDevice)
@@ -199,7 +204,7 @@ ymin(g::GraphicsDevice) = 0
 ymax(g::GraphicsDevice) = height(g)
 
 # an object that can actually be drawn to
-abstract GraphicsContext
+@compat abstract type GraphicsContext end
 
 @mustimplement width(gc::GraphicsContext)
 @mustimplement height(gc::GraphicsContext)

@@ -16,10 +16,10 @@ using Base.Test
 
 
 ## rotation: rotate()
-@test_approx_eq rotate(Vec2(1, 2), π, Vec2(1, 1)).x 1
-@test_approx_eq rotate(Vec2(1, 2), π, Vec2(1, 1)).y 0
-@test_approx_eq rotate(Vec2(1, 2), 2π).x 1
-@test_approx_eq rotate(Vec2(1, 2), 2π).y 2
+@test rotate(Vec2(1, 2), π, Vec2(1, 1)).x ≈ 1
+@test rotate(Vec2(1, 2), π, Vec2(1, 1)).y ≈ 0
+@test rotate(Vec2(1, 2), 2π).x ≈ 1
+@test rotate(Vec2(1, 2), 2π).y ≈ 2
 
 ## Euclidean norm/magnitude: norm()
 @test norm(Vec2(1, 2)) == sqrt(5)
@@ -36,7 +36,7 @@ BBT = BoundingBox(BBT_point_1, BBT_point_2, BBT_point_3)
 @test height(BBT) == 4
 @test width(BBT) == 3
 @test diagonal(BBT) == 5
-@test_approx_eq aspect_ratio(BBT) 1.333333333333
+@test aspect_ratio(BBT) ≈ 1.333333333333
 @test xmin(BBT) == 1
 @test xmax(BBT) == 4
 @test center(BBT) == Vec2(2.5, 3)
@@ -64,10 +64,10 @@ BBT_2 = BoundingBox(6, 7, 8, 9)
 
 #### rotate()
 BBT_3 = rotate(BBT_1, π, Point(0, 1))
-@test_approx_eq BBT_3.xmin -3
-@test_approx_eq BBT_3.ymin -3
-@test_approx_eq BBT_3.xmax -2
-@test_approx_eq BBT_3.ymax -2
+@test BBT_3.xmin ≈ -3
+@test BBT_3.ymin ≈ -3
+@test BBT_3.xmax ≈ -2
+@test BBT_3.ymax ≈ -2
 
 #### with_aspect_ratio()
 @test with_aspect_ratio(BBT_1, 2) == BoundingBox(2.25, 2.75, 4, 5)
