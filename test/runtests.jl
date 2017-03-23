@@ -46,12 +46,16 @@ BBT = BoundingBox(BBT_point_1, BBT_point_2, BBT_point_3)
 ### BoundingBox operations
 BBT_1 = BoundingBox(2, 3, 4, 5)
 BBT_2 = BoundingBox(6, 7, 8, 9)
+BBT_3 = BoundingBox(NaN, NaN, NaN, NaN)
+BBT_4 = BoundingBox(-Inf, -Inf, -Inf, -Inf)
 
 #### BoundingBox (+)
 @test BBT_1 + BBT_2 == BoundingBox(2, 7, 4, 9)
+@test BBT_3 + BBT_4 == BoundingBox(-Inf, -Inf, -Inf, -Inf)
 
 #### BoundingBox (&)
 @test BBT_1 & BBT_2 == BoundingBox(6, 3, 8, 5)
+@test BBT_3 & BBT_4 == BoundingBox(-Inf, -Inf, -Inf, -Inf)
 
 #### deform()
 @test deform(BBT_1, -1, 2, -3, 4) == BoundingBox(1, 5, 1, 9)

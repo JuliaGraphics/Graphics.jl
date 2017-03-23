@@ -56,6 +56,15 @@ export
     # TODO: rendering pipeline API
 
 
+# Utilities
+
+# IEEE754 compliant min/max (prefers value over quiet NaN)
+nanmin(x, y) = ifelse((y < x) | (signbit(y) > signbit(x)),
+                      ifelse(isnan(y), x, y), ifelse(isnan(x), y, x))
+nanmax(x, y) = ifelse((y > x) | (signbit(y) < signbit(x)),
+                      ifelse(isnan(y), x, y), ifelse(isnan(x), y, x))
+
+
 # Part 1. geometric primitives
 
 immutable Vec2
@@ -94,10 +103,10 @@ BoundingBox() = BoundingBox(NaN, NaN, NaN, NaN)
 function BoundingBox(p0::Point, points::Point...)
     xmin, xmax, ymin, ymax = p0.x, p0.x, p0.y, p0.y
     for p in points
-        xmin = min(xmin, p.x)
-        xmax = max(xmax, p.x)
-        ymin = min(ymin, p.y)
-        ymax = max(ymax, p.y)
+        xmin = nanmin(xmin, p.x)
+        xmax = nanmax(xmax, p.x)
+        ymin = nanmin(ymin, p.y)
+        ymax = nanmax(ymax, p.y)
     end
     return BoundingBox(xmin, xmax, ymin, ymax)
 end
@@ -105,10 +114,10 @@ end
 function BoundingBox(bb0::BoundingBox, bboxes::BoundingBox...)
     xmin, xmax, ymin, ymax = bb0.xmin, bb0.xmax, bb0.ymin, bb0.ymax
     for bb in bboxes
-        xmin = min(xmin, bb.xmin)
-        xmax = max(xmax, bb.xmax)
-        ymin = min(ymin, bb.ymin)
-        ymax = max(ymax, bb.ymax)
+        xmin = nanmin(xmin, bb.xmin)
+        xmax = nanmax(xmax, bb.xmax)
+        ymin = nanmin(ymin, bb.ymin)
+        ymax = nanmax(ymax, bb.ymax)
     end
     return BoundingBox(xmin, xmax, ymin, ymax)
 end
@@ -128,17 +137,17 @@ xrange(x) = xmin(x), xmax(x)
 yrange(x) = ymin(x), ymax(x)
 
 function (+)(bb1::BoundingBox, bb2::BoundingBox)
-    BoundingBox(min(bb1.xmin, bb2.xmin),
-                max(bb1.xmax, bb2.xmax),
-                min(bb1.ymin, bb2.ymin),
-                max(bb1.ymax, bb2.ymax))
+    BoundingBox(nanmin(bb1.xmin, bb2.xmin),
+                nanmax(bb1.xmax, bb2.xmax),
+                nanmin(bb1.ymin, bb2.ymin),
+                nanmax(bb1.ymax, bb2.ymax))
 end
 
 function (&)(bb1::BoundingBox, bb2::BoundingBox)
-    BoundingBox(max(bb1.xmin, bb2.xmin),
-                min(bb1.xmax, bb2.xmax),
-                max(bb1.ymin, bb2.ymin),
-                min(bb1.ymax, bb2.ymax))
+    BoundingBox(nanmax(bb1.xmin, bb2.xmin),
+                nanmin(bb1.xmax, bb2.xmax),
+                nanmax(bb1.ymin, bb2.ymin),
+                nanmin(bb1.ymax, bb2.ymax))
 end
 
 function deform(bb::BoundingBox, dl, dr, dt, db)
