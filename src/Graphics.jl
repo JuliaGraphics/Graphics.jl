@@ -10,6 +10,40 @@ if isdefined(Base, :scale)
     import Base: scale
 end
 
+"""
+Graphics defines an API for drawing in two dimensions.
+
+- Geometric primitives: `Vec2`, `Point`, `BoundingBox`
+
+- Geometry API: `aspect_ratio`, `center`, `deform`, `diagonal`,
+  `isinside`, `shift`, `height`, `width`, `xmin`, `xmax`, `ymin`,
+  `ymax`, `xrange`, `yrange`
+
+- 2d drawing contexts: `GraphicsDevice`, `GraphicsContext`, `creategc`, `getgc`
+
+- Coordinate systems: `set_coords`, `reset_transform`, `rotate`,
+  `scale`, `translate`, `user_to_device!`, `device_to_user!`,
+  `user_to_device_distance!`, `device_to_user_distance!`,
+  `user_to_device`, `device_to_user`
+
+- Lines: `set_line_width`, `set_dash`
+
+- Colors and painting (drawing attributes): `set_source`,
+  `set_source_rgb`, `set_source_rgba`, `save`, `restore`
+
+- Clipping: `clip`, `clip_preserve`, `reset_clip`
+
+- Paths: `move_to`, `line_to`, `rel_line_to`, `rel_move_to`,
+  `new_path`, `new_sub_path`, `close_path`, `arc`
+
+- High-level paths: `rectangle`, `circle`, `polygon`
+
+- Fill and stroke: `fill`, `fill_preserve`, `paint`, `stroke`,
+  `stroke_preserve`, `stroke_transformed`,
+  `stroke_transformed_preserve`
+"""
+Graphics
+
 export
     # Part 1. 2D Geometry
     Vec2, Point, BoundingBox,
