@@ -1,4 +1,4 @@
-VERSION >= v"0.4.0-dev+6521" && __precompile__()
+__precompile__()
 
 module Graphics
 
@@ -67,11 +67,21 @@ nanmax(x, y) = ifelse((y > x) | (signbit(y) < signbit(x)),
 
 # Part 1. geometric primitives
 
+"""
+    Vec2(x, y) -> v
+
+Create a Cartesian representation `v` of a vector (or point) in two dimensions.
+"""
 immutable Vec2
     x::Float64
     y::Float64
 end
 
+"""
+    Point(x, y) -> p
+
+Create a Cartesian representation `p` of a point in two dimensions.
+"""
 const Point = Vec2
 
 (+)(a::Vec2, b::Vec2) = Vec2(a.x + b.x, a.y + b.y)
@@ -80,7 +90,11 @@ const Point = Vec2
 (/)(p::Vec2, s::Real) = Vec2(p.x/s, p.y/s)
 (*)(s::Real, p::Vec2) = p*s
 
-# rotate p around o by angle
+"""
+    rotate(p::Vec2, angle::Real, o::Vec2) -> pnew
+
+Rotate `p` around `o` by `angle`.
+"""
 function rotate(p::Vec2, angle::Real, o::Vec2)
     c = cos(angle)
     s = sin(angle)
@@ -91,6 +105,12 @@ rotate(p::Vec2, angle::Real) = rotate(p, angle, Vec2(0.,0.))
 
 norm(p::Vec2) = hypot(p.x, p.y)
 
+"""
+    BoundingBox(xmin, xmax, ymin, ymax) -> bb
+
+Create a representation `bb` of a rectangular region, specifying the
+coordinates of the horizontal (x) and vertical (y) edges.
+"""
 immutable BoundingBox
     xmin::Float64
     xmax::Float64
@@ -100,6 +120,11 @@ end
 
 BoundingBox() = BoundingBox(NaN, NaN, NaN, NaN)
 
+"""
+    BoundingBox(p0::Point, points::Point...) -> bb
+
+Compute the BoundingBox `bb` that minimally encloses all of the input points.
+"""
 function BoundingBox(p0::Point, points::Point...)
     xmin, xmax, ymin, ymax = p0.x, p0.x, p0.y, p0.y
     for p in points
@@ -111,6 +136,11 @@ function BoundingBox(p0::Point, points::Point...)
     return BoundingBox(xmin, xmax, ymin, ymax)
 end
 
+"""
+    BoundingBox(bb0::BoundingBox, bboxes::BoundingBox...) -> bb
+
+Compute the BoundingBox `bb` that minimally encloses all of the input boxes.
+"""
 function BoundingBox(bb0::BoundingBox, bboxes::BoundingBox...)
     xmin, xmax, ymin, ymax = bb0.xmin, bb0.xmax, bb0.ymin, bb0.ymax
     for bb in bboxes
@@ -125,6 +155,11 @@ end
 width(bb::BoundingBox) = bb.xmax - bb.xmin
 height(bb::BoundingBox) = bb.ymax - bb.ymin
 diagonal(bb) = hypot(width(bb), height(bb))
+"""
+    aspect_ratio(bb::BoundingBox) -> r
+
+Compute the ratio `r` of the height and width of `bb`.
+"""
 aspect_ratio(bb) = height(bb)/width(bb)
 
 xmin(bb::BoundingBox) = bb.xmin
@@ -136,6 +171,11 @@ center(x) = Point((xmin(x)+xmax(x))/2, (ymin(x)+ymax(x))/2)
 xrange(x) = xmin(x), xmax(x)
 yrange(x) = ymin(x), ymax(x)
 
+"""
+    bb1 + bb2 -> bb
+
+Compute the BoundingBox `bb` that minimally contains `bb1` and `bb2`
+"""
 function (+)(bb1::BoundingBox, bb2::BoundingBox)
     BoundingBox(nanmin(bb1.xmin, bb2.xmin),
                 nanmax(bb1.xmax, bb2.xmax),
@@ -143,6 +183,11 @@ function (+)(bb1::BoundingBox, bb2::BoundingBox)
                 nanmax(bb1.ymax, bb2.ymax))
 end
 
+"""
+    bb1 & bb2 -> bb
+
+Compute the intersection of two BoundingBoxes.
+"""
 function (&)(bb1::BoundingBox, bb2::BoundingBox)
     BoundingBox(nanmax(bb1.xmin, bb2.xmin),
                 nanmin(bb1.xmax, bb2.xmax),
@@ -150,16 +195,31 @@ function (&)(bb1::BoundingBox, bb2::BoundingBox)
                 nanmin(bb1.ymax, bb2.ymax))
 end
 
+"""
+    deform(bb::BoundingBox, Δl, Δr, Δt, Δb) -> bbnew
+
+Add `Δl` (left), `Δr` (right), `Δt` (top), and `Δb` (bottom) to the
+edges of a BoundingBox.
+"""
 function deform(bb::BoundingBox, dl, dr, dt, db)
     BoundingBox(bb.xmin + dl, bb.xmax + dr, bb.ymin + dt, bb.ymax + db)
 end
 
-# shift center by (dx,dy), keeping width & height fixed
+"""
+    shift(bb::BoundingBox, Δx, Δy) -> bbnew
+
+Shift center by (Δx,Δy), keeping width & height fixed.
+"""
 function shift(bb::BoundingBox, dx, dy)
     BoundingBox(bb.xmin + dx, bb.xmax + dx, bb.ymin + dy, bb.ymax + dy)
 end
 
-# scale width & height, keeping center fixed
+"""
+    s*bb -> bbnew
+    bb*s -> bbnew
+
+Scale width & height of BoundingBox `bb` by `s`, keeping center fixed.
+"""
 function (*)(bb::BoundingBox, s::Real)
     dw = 0.5*(s - 1)*width(bb)
     dh = 0.5*(s - 1)*height(bb)
@@ -167,6 +227,12 @@ function (*)(bb::BoundingBox, s::Real)
 end
 (*)(s::Real, bb::BoundingBox) = bb*s
 
+"""
+    rotate(bb::BoundingBox, angle, o) -> bbnew
+
+Rotate `bb` around `o` by `angle`, returning the BoundingBox that
+encloses the vertices of the rotated box.
+"""
 function rotate(bb::BoundingBox, angle::Real, p::Point)
     a = rotate(Point(bb.xmin,bb.ymin), angle, p)
     b = rotate(Point(bb.xmax,bb.ymin), angle, p)
@@ -185,6 +251,12 @@ function with_aspect_ratio(bb::BoundingBox, ratio::Real)
     end
 end
 
+"""
+    isinside(bb::BoundingBox, p::Point) -> tf::Bool
+    isinside(bb::BoundingBox, x, y) -> tf::Bool
+
+Determine whether the point lies within `bb`.
+"""
 isinside(bb::BoundingBox, x, y) = (bb.xmin <= x <= bb.xmax) && (bb.ymin <= y <= bb.ymax)
 isinside(bb::BoundingBox, p::Point) = isinside(bb, p.x, p.y)
 
