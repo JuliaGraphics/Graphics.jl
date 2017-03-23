@@ -242,7 +242,24 @@ function set_coords(c::GraphicsContext, x, y, w, h, l, r, t, b)
     end
     c
 end
-set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox) = set_coords(c, device.xmin, device.ymin, width(device), height(device), user.xmin, user.xmax, user.ymin, user.ymax)
+"""
+    set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox)
+    set_coords(c::GraphicsContext, user::BoundingBox)
+
+Set the device->user coordinate transformation of `c` so that
+`device`, expressed in "device coordinates" (pixels), is equivalent to
+`user` as expressed in "user coordinates". If `device` is omitted, it
+defaults to the full span of `c`,
+`BoundingBox(0, width(c), 0, height(c))`.
+
+See also `get_matrix`, `set_matrix`.
+"""
+set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox) =
+    set_coords(c,
+               device.xmin, device.ymin, width(device), height(device),
+               user.xmin, user.xmax, user.ymin, user.ymax)
+set_coords(c::GraphicsContext, user::BoundingBox) =
+    set_coords(c, BoundingBox(0, width(c), 0, height(c)), user)
 
 @mustimplement save(gc::GraphicsContext)
 @mustimplement restore(gc::GraphicsContext)
