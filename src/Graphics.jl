@@ -21,7 +21,7 @@ Graphics defines an API for drawing in two dimensions.
 
 - 2d drawing contexts: `GraphicsDevice`, `GraphicsContext`, `creategc`, `getgc`
 
-- Coordinate systems: `set_coords`, `reset_transform`, `rotate`,
+- Coordinate systems: `set_coordinates`, `reset_transform`, `rotate`,
   `scale`, `translate`, `user_to_device!`, `device_to_user!`,
   `user_to_device_distance!`, `device_to_user_distance!`,
   `user_to_device`, `device_to_user`
@@ -31,7 +31,7 @@ Graphics defines an API for drawing in two dimensions.
 - Colors and painting (drawing attributes): `set_source`,
   `set_source_rgb`, `set_source_rgba`, `save`, `restore`
 
-- Clipping: `clip`, `clip_preserve`, `reset_clip`
+- Clipping: `clip`, `clip_preserve`, `reset_clip`, `inner_canvas`
 
 - Paths: `move_to`, `line_to`, `rel_line_to`, `rel_move_to`,
   `new_path`, `new_sub_path`, `close_path`, `arc`
@@ -67,12 +67,12 @@ export
     set_source,
 
     # coordinate systems
-    reset_transform, set_coords, rotate, scale, translate, user_to_device!,
+    reset_transform, set_coordinates, rotate, scale, translate, user_to_device!,
     device_to_user!, user_to_device_distance!, device_to_user_distance!,
     user_to_device, device_to_user,
 
     # clipping
-    clip, clip_preserve, reset_clip,
+    clip, clip_preserve, reset_clip, inner_canvas,
 
     # path primitives
     move_to, line_to, rel_line_to, rel_move_to, new_path, new_sub_path,
@@ -329,12 +329,38 @@ getgc(gc::GraphicsContext) = gc
 
 # transformations
 
-# set coordinates in terms of left, right, top, bottom
-function set_coords(c::GraphicsContext, x, y, w, h, l, r, t, b)
+"""
+    inner_canvas(c::GraphicsContext, device::BoundingBox, user::BoundingBox)
+    inner_canvas(c::GraphicsContext, x, y, w, h, l, r, t, b)
+
+Create a rectangular drawing area inside `device` (represented in
+device-coordinates), giving it user-coordinates `user`. Any drawing
+that occurs outside this box is clipped.
+
+`x`, `y`, `w`, and `h` are an alternative parametrization of `device`,
+and `l`, `r`, `t`, `b` parametrize `user`.
+
+See also: [`set_coordinates`](@ref).
+"""
+inner_canvas(c::GraphicsContext, device::BoundingBox, user::BoundingBox) =
+    inner_canvas(c,
+                 device.xmin, device.ymin, width(device), height(device),
+                 user.xmin, user.xmax, user.ymin, user.ymax)
+
+function inner_canvas(c::GraphicsContext, x, y, w, h, l, r, t, b)
     reset_transform(c)
     reset_clip(c)
     rectangle(c, x, y, w, h)
     clip(c)
+    _set_coordinates(c, x, y, w, h, l, r, t, b)
+end
+
+function set_coordinates(c::GraphicsContext, x, y, w, h, l, r, t, b)
+    reset_transform(c)
+    _set_coordinates(c, x, y, w, h, l, r, t, b)
+end
+
+function _set_coordinates(c::GraphicsContext, x, y, w, h, l, r, t, b)
     if (r-l) != w || (b-t) != h || l != x || t != y
         # note: Cairo assigns integer pixel-space coordinates to the grid
         # points between sample locations, not to the centers of pixels.
@@ -348,9 +374,10 @@ function set_coords(c::GraphicsContext, x, y, w, h, l, r, t, b)
     end
     c
 end
+
 """
-    set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox)
-    set_coords(c::GraphicsContext, user::BoundingBox)
+    set_coordinates(c::GraphicsContext, device::BoundingBox, user::BoundingBox)
+    set_coordinates(c::GraphicsContext, user::BoundingBox)
 
 Set the device->user coordinate transformation of `c` so that
 `device`, expressed in "device coordinates" (pixels), is equivalent to
@@ -360,12 +387,12 @@ defaults to the full span of `c`,
 
 See also `get_matrix`, `set_matrix`.
 """
-set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox) =
-    set_coords(c,
+set_coordinates(c::GraphicsContext, device::BoundingBox, user::BoundingBox) =
+    set_coordinates(c,
                device.xmin, device.ymin, width(device), height(device),
                user.xmin, user.xmax, user.ymin, user.ymax)
-set_coords(c::GraphicsContext, user::BoundingBox) =
-    set_coords(c, BoundingBox(0, width(c), 0, height(c)), user)
+set_coordinates(c::GraphicsContext, user::BoundingBox) =
+    set_coordinates(c, BoundingBox(0, width(c), 0, height(c)), user)
 
 @mustimplement save(gc::GraphicsContext)
 @mustimplement restore(gc::GraphicsContext)
@@ -458,5 +485,7 @@ function polygon(self::GraphicsContext, points::AbstractVector)
     end
     close_path(self)
 end
+
+include("deprecations.jl")
 
 end # module
