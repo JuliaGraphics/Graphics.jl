@@ -1,4 +1,4 @@
-VERSION >= v"0.4.0-dev+6521" && __precompile__()
+__precompile__()
 
 module Graphics
 
@@ -10,6 +10,40 @@ using NaNMath
 if isdefined(Base, :scale)
     import Base: scale
 end
+
+"""
+Graphics defines an API for drawing in two dimensions.
+
+- Geometric primitives: `Vec2`, `Point`, `BoundingBox`
+
+- Geometry API: `aspect_ratio`, `center`, `deform`, `diagonal`,
+  `isinside`, `shift`, `height`, `width`, `xmin`, `xmax`, `ymin`,
+  `ymax`, `xrange`, `yrange`
+
+- 2d drawing contexts: `GraphicsDevice`, `GraphicsContext`, `creategc`, `getgc`
+
+- Coordinate systems: `set_coordinates`, `reset_transform`, `rotate`,
+  `scale`, `translate`, `user_to_device!`, `device_to_user!`,
+  `user_to_device_distance!`, `device_to_user_distance!`,
+  `user_to_device`, `device_to_user`
+
+- Lines: `set_line_width`, `set_dash`
+
+- Colors and painting (drawing attributes): `set_source`,
+  `set_source_rgb`, `set_source_rgba`, `save`, `restore`
+
+- Clipping: `clip`, `clip_preserve`, `reset_clip`, `inner_canvas`
+
+- Paths: `move_to`, `line_to`, `rel_line_to`, `rel_move_to`,
+  `new_path`, `new_sub_path`, `close_path`, `arc`
+
+- High-level paths: `rectangle`, `circle`, `polygon`
+
+- Fill and stroke: `fill`, `fill_preserve`, `paint`, `stroke`,
+  `stroke_preserve`, `stroke_transformed`,
+  `stroke_transformed_preserve`
+"""
+Graphics
 
 export
     # Part 1. 2D Geometry
@@ -34,12 +68,12 @@ export
     set_source,
 
     # coordinate systems
-    reset_transform, set_coords, rotate, scale, translate, user_to_device!,
+    reset_transform, set_coordinates, rotate, scale, translate, user_to_device!,
     device_to_user!, user_to_device_distance!, device_to_user_distance!,
     user_to_device, device_to_user,
 
     # clipping
-    clip, clip_preserve, reset_clip,
+    clip, clip_preserve, reset_clip, inner_canvas,
 
     # path primitives
     move_to, line_to, rel_line_to, rel_move_to, new_path, new_sub_path,
@@ -59,11 +93,21 @@ export
 
 # Part 1. geometric primitives
 
+"""
+    Vec2(x, y) -> v
+
+Create a Cartesian representation `v` of a vector (or point) in two dimensions.
+"""
 immutable Vec2
     x::Float64
     y::Float64
 end
 
+"""
+    Point(x, y) -> p
+
+Create a Cartesian representation `p` of a point in two dimensions.
+"""
 const Point = Vec2
 
 (+)(a::Vec2, b::Vec2) = Vec2(a.x + b.x, a.y + b.y)
@@ -72,7 +116,11 @@ const Point = Vec2
 (/)(p::Vec2, s::Real) = Vec2(p.x/s, p.y/s)
 (*)(s::Real, p::Vec2) = p*s
 
-# rotate p around o by angle
+"""
+    rotate(p::Vec2, angle::Real, o::Vec2) -> pnew
+
+Rotate `p` around `o` by `angle`.
+"""
 function rotate(p::Vec2, angle::Real, o::Vec2)
     c = cos(angle)
     s = sin(angle)
@@ -83,6 +131,12 @@ rotate(p::Vec2, angle::Real) = rotate(p, angle, Vec2(0.,0.))
 
 norm(p::Vec2) = hypot(p.x, p.y)
 
+"""
+    BoundingBox(xmin, xmax, ymin, ymax) -> bb
+
+Create a representation `bb` of a rectangular region, specifying the
+coordinates of the horizontal (x) and vertical (y) edges.
+"""
 immutable BoundingBox
     xmin::Float64
     xmax::Float64
@@ -92,6 +146,11 @@ end
 
 BoundingBox() = BoundingBox(NaN, NaN, NaN, NaN)
 
+"""
+    BoundingBox(p0::Point, points::Point...) -> bb
+
+Compute the BoundingBox `bb` that minimally encloses all of the input points.
+"""
 function BoundingBox(p0::Point, points::Point...)
     xmin, xmax, ymin, ymax = p0.x, p0.x, p0.y, p0.y
     for p in points
@@ -103,6 +162,11 @@ function BoundingBox(p0::Point, points::Point...)
     return BoundingBox(xmin, xmax, ymin, ymax)
 end
 
+"""
+    BoundingBox(bb0::BoundingBox, bboxes::BoundingBox...) -> bb
+
+Compute the BoundingBox `bb` that minimally encloses all of the input boxes.
+"""
 function BoundingBox(bb0::BoundingBox, bboxes::BoundingBox...)
     xmin, xmax, ymin, ymax = bb0.xmin, bb0.xmax, bb0.ymin, bb0.ymax
     for bb in bboxes
@@ -117,6 +181,11 @@ end
 width(bb::BoundingBox) = bb.xmax - bb.xmin
 height(bb::BoundingBox) = bb.ymax - bb.ymin
 diagonal(bb) = hypot(width(bb), height(bb))
+"""
+    aspect_ratio(bb::BoundingBox) -> r
+
+Compute the ratio `r` of the height and width of `bb`.
+"""
 aspect_ratio(bb) = height(bb)/width(bb)
 
 xmin(bb::BoundingBox) = bb.xmin
@@ -128,6 +197,11 @@ center(x) = Point((xmin(x)+xmax(x))/2, (ymin(x)+ymax(x))/2)
 xrange(x) = xmin(x), xmax(x)
 yrange(x) = ymin(x), ymax(x)
 
+"""
+    bb1 + bb2 -> bb
+
+Compute the BoundingBox `bb` that minimally contains `bb1` and `bb2`
+"""
 function (+)(bb1::BoundingBox, bb2::BoundingBox)
     BoundingBox(NaNMath.min(bb1.xmin, bb2.xmin),
                 NaNMath.max(bb1.xmax, bb2.xmax),
@@ -135,6 +209,11 @@ function (+)(bb1::BoundingBox, bb2::BoundingBox)
                 NaNMath.max(bb1.ymax, bb2.ymax))
 end
 
+"""
+    bb1 & bb2 -> bb
+
+Compute the intersection of two BoundingBoxes.
+"""
 function (&)(bb1::BoundingBox, bb2::BoundingBox)
     BoundingBox(NaNMath.max(bb1.xmin, bb2.xmin),
                 NaNMath.min(bb1.xmax, bb2.xmax),
@@ -142,16 +221,31 @@ function (&)(bb1::BoundingBox, bb2::BoundingBox)
                 NaNMath.min(bb1.ymax, bb2.ymax))
 end
 
+"""
+    deform(bb::BoundingBox, Δl, Δr, Δt, Δb) -> bbnew
+
+Add `Δl` (left), `Δr` (right), `Δt` (top), and `Δb` (bottom) to the
+edges of a BoundingBox.
+"""
 function deform(bb::BoundingBox, dl, dr, dt, db)
     BoundingBox(bb.xmin + dl, bb.xmax + dr, bb.ymin + dt, bb.ymax + db)
 end
 
-# shift center by (dx,dy), keeping width & height fixed
+"""
+    shift(bb::BoundingBox, Δx, Δy) -> bbnew
+
+Shift center by (Δx,Δy), keeping width & height fixed.
+"""
 function shift(bb::BoundingBox, dx, dy)
     BoundingBox(bb.xmin + dx, bb.xmax + dx, bb.ymin + dy, bb.ymax + dy)
 end
 
-# scale width & height, keeping center fixed
+"""
+    s*bb -> bbnew
+    bb*s -> bbnew
+
+Scale width & height of BoundingBox `bb` by `s`, keeping center fixed.
+"""
 function (*)(bb::BoundingBox, s::Real)
     dw = 0.5*(s - 1)*width(bb)
     dh = 0.5*(s - 1)*height(bb)
@@ -159,6 +253,12 @@ function (*)(bb::BoundingBox, s::Real)
 end
 (*)(s::Real, bb::BoundingBox) = bb*s
 
+"""
+    rotate(bb::BoundingBox, angle, o) -> bbnew
+
+Rotate `bb` around `o` by `angle`, returning the BoundingBox that
+encloses the vertices of the rotated box.
+"""
 function rotate(bb::BoundingBox, angle::Real, p::Point)
     a = rotate(Point(bb.xmin,bb.ymin), angle, p)
     b = rotate(Point(bb.xmax,bb.ymin), angle, p)
@@ -177,6 +277,12 @@ function with_aspect_ratio(bb::BoundingBox, ratio::Real)
     end
 end
 
+"""
+    isinside(bb::BoundingBox, p::Point) -> tf::Bool
+    isinside(bb::BoundingBox, x, y) -> tf::Bool
+
+Determine whether the point lies within `bb`.
+"""
 isinside(bb::BoundingBox, x, y) = (bb.xmin <= x <= bb.xmax) && (bb.ymin <= y <= bb.ymax)
 isinside(bb::BoundingBox, p::Point) = isinside(bb, p.x, p.y)
 
@@ -215,12 +321,38 @@ getgc(gc::GraphicsContext) = gc
 
 # transformations
 
-# set coordinates in terms of left, right, top, bottom
-function set_coords(c::GraphicsContext, x, y, w, h, l, r, t, b)
+"""
+    inner_canvas(c::GraphicsContext, device::BoundingBox, user::BoundingBox)
+    inner_canvas(c::GraphicsContext, x, y, w, h, l, r, t, b)
+
+Create a rectangular drawing area inside `device` (represented in
+device-coordinates), giving it user-coordinates `user`. Any drawing
+that occurs outside this box is clipped.
+
+`x`, `y`, `w`, and `h` are an alternative parametrization of `device`,
+and `l`, `r`, `t`, `b` parametrize `user`.
+
+See also: [`set_coordinates`](@ref).
+"""
+inner_canvas(c::GraphicsContext, device::BoundingBox, user::BoundingBox) =
+    inner_canvas(c,
+                 device.xmin, device.ymin, width(device), height(device),
+                 user.xmin, user.xmax, user.ymin, user.ymax)
+
+function inner_canvas(c::GraphicsContext, x, y, w, h, l, r, t, b)
     reset_transform(c)
     reset_clip(c)
     rectangle(c, x, y, w, h)
     clip(c)
+    _set_coordinates(c, x, y, w, h, l, r, t, b)
+end
+
+function set_coordinates(c::GraphicsContext, x, y, w, h, l, r, t, b)
+    reset_transform(c)
+    _set_coordinates(c, x, y, w, h, l, r, t, b)
+end
+
+function _set_coordinates(c::GraphicsContext, x, y, w, h, l, r, t, b)
     if (r-l) != w || (b-t) != h || l != x || t != y
         # note: Cairo assigns integer pixel-space coordinates to the grid
         # points between sample locations, not to the centers of pixels.
@@ -234,7 +366,25 @@ function set_coords(c::GraphicsContext, x, y, w, h, l, r, t, b)
     end
     c
 end
-set_coords(c::GraphicsContext, device::BoundingBox, user::BoundingBox) = set_coords(c, device.xmin, device.ymin, width(device), height(device), user.xmin, user.xmax, user.ymin, user.ymax)
+
+"""
+    set_coordinates(c::GraphicsContext, device::BoundingBox, user::BoundingBox)
+    set_coordinates(c::GraphicsContext, user::BoundingBox)
+
+Set the device->user coordinate transformation of `c` so that
+`device`, expressed in "device coordinates" (pixels), is equivalent to
+`user` as expressed in "user coordinates". If `device` is omitted, it
+defaults to the full span of `c`,
+`BoundingBox(0, width(c), 0, height(c))`.
+
+See also `get_matrix`, `set_matrix`.
+"""
+set_coordinates(c::GraphicsContext, device::BoundingBox, user::BoundingBox) =
+    set_coordinates(c,
+               device.xmin, device.ymin, width(device), height(device),
+               user.xmin, user.xmax, user.ymin, user.ymax)
+set_coordinates(c::GraphicsContext, user::BoundingBox) =
+    set_coordinates(c, BoundingBox(0, width(c), 0, height(c)), user)
 
 @mustimplement save(gc::GraphicsContext)
 @mustimplement restore(gc::GraphicsContext)
@@ -327,5 +477,7 @@ function polygon(self::GraphicsContext, points::AbstractVector)
     end
     close_path(self)
 end
+
+include("deprecations.jl")
 
 end # module
