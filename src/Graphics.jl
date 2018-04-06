@@ -2,14 +2,13 @@ __precompile__()
 
 module Graphics
 
-import Base: +, -, *, /, &, fill, norm
-using Colors
 using Compat
+using Compat.LinearAlgebra
+using Colors
 using NaNMath
 
-if isdefined(Base, :scale)
-    import Base: scale
-end
+import Base: +, -, *, /, &, fill
+import Compat.LinearAlgebra: norm
 
 """
 Graphics defines an API for drawing in two dimensions.
@@ -98,7 +97,7 @@ export
 
 Create a Cartesian representation `v` of a vector (or point) in two dimensions.
 """
-immutable Vec2
+struct Vec2
     x::Float64
     y::Float64
 end
@@ -137,7 +136,7 @@ norm(p::Vec2) = hypot(p.x, p.y)
 Create a representation `bb` of a rectangular region, specifying the
 coordinates of the horizontal (x) and vertical (y) edges.
 """
-immutable BoundingBox
+struct BoundingBox
     xmin::Float64
     xmax::Float64
     ymin::Float64
@@ -300,7 +299,7 @@ macro mustimplement(sig)
 end
 
 # a graphics output device; can create GraphicsContexts
-@compat abstract type GraphicsDevice end
+abstract type GraphicsDevice end
 
 @mustimplement width(gd::GraphicsDevice)
 @mustimplement height(gd::GraphicsDevice)
@@ -311,7 +310,7 @@ ymin(g::GraphicsDevice) = 0
 ymax(g::GraphicsDevice) = height(g)
 
 # an object that can actually be drawn to
-@compat abstract type GraphicsContext end
+abstract type GraphicsContext end
 
 @mustimplement width(gc::GraphicsContext)
 @mustimplement height(gc::GraphicsContext)
