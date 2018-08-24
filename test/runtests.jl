@@ -1,6 +1,7 @@
 using Graphics
 using Compat
 using Compat.Test
+using Compat.LinearAlgebra
 
 @testset "Geometry" begin
     ## Point-vector identity (typealias)
