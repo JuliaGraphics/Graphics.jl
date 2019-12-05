@@ -1,14 +1,10 @@
-__precompile__()
-
 module Graphics
 
-using Compat
-using Compat.LinearAlgebra
 using Colors
 using NaNMath
 
 import Base: +, -, *, /, &, fill
-import Compat.LinearAlgebra: norm
+import LinearAlgebra: norm
 
 """
 Graphics defines an API for drawing in two dimensions.
@@ -476,7 +472,5 @@ function polygon(self::GraphicsContext, points::AbstractVector)
     end
     close_path(self)
 end
-
-include("deprecations.jl")
 
 end # module

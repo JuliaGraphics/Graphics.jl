@@ -1,7 +1,6 @@
 using Graphics
-using Compat
-using Compat.Test
-using Compat.LinearAlgebra
+using LinearAlgebra
+using Test
 
 @testset "Geometry" begin
     ## Point-vector identity (typealias)
@@ -83,18 +82,3 @@ using Compat.LinearAlgebra
     @test isinside(BBT_1, Point(2, 4))
     @test isinside(BBT_1, Point(1, 3)) == false
 end
-
-# using Gtk.ShortNames, Cairo
-
-# @testset "Canvas" begin
-#     win = Window() |> (cnvs = Canvas(300, 280))
-#     draw(cnvs) do c
-#         set_coords(getgc(cnvs), BoundingBox(0, 1, 0, 1))
-#     end
-#     showall(win)
-#     sleep(0.5)
-#     mtrx = Cairo.get_matrix(getgc(cnvs))
-#     @test mtrx.xx == 300
-#     @test mtrx.yy == 280
-#     @test mtrx.xy == mtrx.yx == mtrx.x0 == mtrx.y0 == 0
-# end
