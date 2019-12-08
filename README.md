@@ -1,7 +1,10 @@
 # Graphics.jl
-A holding place for Base graphics
 
-[![Graphics](http://pkg.julialang.org/badges/Graphics_0.3.svg)](http://pkg.julialang.org/?pkg=Graphics&ver=0.3)
-[![Graphics](http://pkg.julialang.org/badges/Graphics_0.4.svg)](http://pkg.julialang.org/?pkg=Graphics&ver=0.4)
+Graphics.jl is an [abstraction layer](https://en.wikipedia.org/wiki/Abstraction_layer)
+for graphical operations in Julia.
 
-[Julia 0.3 Base.Graphics docs](http://docs.julialang.org/en/release-0.3/stdlib/graphics/).
+[![Graphics](http://pkg.julialang.org/badges/Graphics_1.0.svg)](http://pkg.julialang.org/?pkg=Graphics&ver=1.0)
+
+See the documentation:
+
+[![](https://img.shields.io/badge/docs-stable-blue.svg)](https://JuliaGraphics.github.io/Graphics.jl/stable)
