@@ -190,14 +190,14 @@ end
 
 Get the horizontal length of `obj`.
 """
-width(bb::BoundingBox) = bb.xmax - bb.xmin # TODO: generalization with xmax()/xmin()
+width(obj) = xmax(obj) - xmin(obj)
 
 """
     hieght(obj) -> h
 
 Get the vertical length of `obj`.
 """
-height(bb::BoundingBox) = bb.ymax - bb.ymin # TODO: generalization with ymax()/ymin()
+height(obj) = ymax(obj) - ymin(obj)
 
 """
     diagonal(obj) -> diag
@@ -410,9 +410,9 @@ abstract type GraphicsDevice end
 Create a new `GraphicContext`.
 """
 @mustimplement creategc(gd::GraphicsDevice)
-xmin(g::GraphicsDevice) = 0 # FIXME: use the same type as `xmax`
+xmin(g::GraphicsDevice) = zero(typeof(width(g)))
 xmax(g::GraphicsDevice) = width(g)
-ymin(g::GraphicsDevice) = 0 # FIXME: use the same type as `ymax`
+ymin(g::GraphicsDevice) = zero(typeof(height(g)))
 ymax(g::GraphicsDevice) = height(g)
 
 """
@@ -555,42 +555,54 @@ after any existing transformation.
 @mustimplement translate(gc::GraphicsContext, ::Real, ::Real)
 
 """
-    user_to_device!(gc::GraphicsContext, c::Vector{Float64})
+    user_to_device!(gc::GraphicsContext, c::AbstractVector)
 
 Transform a coordinate `c` from the user space to the device space.
 
 See also: [`user_to_device`](@ref), [`device_to_user!`](@ref)
 """
-user_to_device!(gc::GraphicsContext, c::Vector{Float64}) = c # TODO: generalization
+function user_to_device!(gc::GraphicsContext, c::AbstractVector{T}) where T <: Real
+    length(c) == 2 || throw(ArgumentError("Only 2-D vectors are supported."))
+    @inbounds c[1], c[2] = user_to_device(gc, Float64(c[1]), Float64(c[2]))
+end
+user_to_device!(gc::GraphicsContext, c::Vector{Float64}) = c
 
 """
-    device_to_user!(gc::GraphicsContext, c::Vector{Float64})
+    device_to_user!(gc::GraphicsContext, c::AbstractVector)
 
 Transform a coordinate `c` from the device space to the user space.
 
 See also: [`device_to_user`](@ref), [`user_to_device!`](@ref)
 """
-device_to_user!(gc::GraphicsContext, c::Vector{Float64}) = c # TODO: generalization
+function device_to_user!(gc::GraphicsContext, c::AbstractVector{T}) where T <: Real
+    length(c) == 2 || throw(ArgumentError("Only 2-D vectors are supported."))
+    @inbounds c[1], c[2] = user_to_device(gc, Float64(c[1]), Float64(c[2]))
+end
+device_to_user!(gc::GraphicsContext, c::Vector{Float64}) = c
 
 """
-    user_to_device_distance!(gc::GraphicsContext, d::Vector{Float64})
+    user_to_device_distance!(gc::GraphicsContext, d::AbstractVector)
 
 Transform a distance vector `d` from the user space to the device space. This
 function is similar to the [`device_to_user!`](@ref) except that the translation
 components will be cancelled.
 """
-user_to_device_distance!(gc::GraphicsContext, c::Vector{Float64}) = c # TODO: generalization
+function user_to_device_distance!(gc::GraphicsContext, d::AbstractVector{T}) where T <: Real
+    user_to_device!(gc, d)
+    d .-= user_to_device(gc, zero(T), zero(T))
+end
 
 """
-    device_to_user_distance!(gc::GraphicsContext, d::Vector{Float64})
+    device_to_user_distance!(gc::GraphicsContext, d::AbstractVector)
 
 Transform a distance vector `d` from the device space to the user space. This
 function is similar to the [`user_to_device!`](@ref) except that the translation
 components will be cancelled.
 """
-device_to_user_distance!(gc::GraphicsContext, c::Vector{Float64}) = c # TODO: generalization
-
-const d2ubuf = zeros(2)
+function device_to_user_distance!(gc::GraphicsContext, d::AbstractVector{T}) where T <: Real
+    device_to_user!(gc, d)
+    d .-= device_to_user(gc, zero(T), zero(T))
+end
 
 """
     user_to_device(gc::GraphicsContext, x, y) -> (xd, yd)
@@ -600,11 +612,10 @@ Transform a user space coordinate `(x, y)` to the device space coordinate
 
 See also: [`user_to_device!`](@ref), [`device_to_user`](@ref)
 """
-function user_to_device(gc::GraphicsContext, x::Real, y::Real) # FIXME: avoid use of global variable
-    d2ubuf[1] = x
-    d2ubuf[2] = y
-    user_to_device!(gc, d2ubuf)
-    d2ubuf[1], d2ubuf[2]
+function user_to_device(gc::GraphicsContext, x::Real, y::Real)
+    v = [x, y]
+    user_to_device!(gc, v)
+    @inbounds (v[1], v[2])
 end
 
 """
@@ -615,11 +626,10 @@ Transform a device space coordinate `(x, y)` to the user space coordinate
 
 See also: [`device_to_user!`](@ref), [`user_to_device`](@ref)
 """
-function device_to_user(gc::GraphicsContext, x::Real, y::Real) # FIXME: avoid use of global variable
-    d2ubuf[1] = x
-    d2ubuf[2] = y
-    device_to_user!(gc, d2ubuf)
-    d2ubuf[1], d2ubuf[2]
+function device_to_user(gc::GraphicsContext, x::Real, y::Real)
+    v = [x, y]
+    device_to_user!(gc, v)
+    @inbounds (v[1], v[2])
 end
 
 # drawing and properties
@@ -672,8 +682,12 @@ source color.
 @mustimplement set_source(gc::GraphicsContext, src)
 
 function set_source(gc::GraphicsContext, c::Color)
-    rgb = convert(RGB, c)
-    set_source_rgb(gc, rgb.r, rgb.g, rgb.b)
+    c isa AbstractRGB && return set_source_rgb(gc, red(c), green(c), blue(c))
+    set_source(gc, convert(RGB, c))
+end
+function set_source(gc::GraphicsContext, c::TransparentColor)
+    c isa TransparentRGB && return set_source_rgba(gc, red(c), green(c), blue(c), alpha(c))
+    set_source(gc, convert(ARGB, c))
 end
 
 """
