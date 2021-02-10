@@ -478,7 +478,7 @@ function _set_coordinates(gc::GraphicsContext, x, y, w, h, l, r, t, b)
         ycent = (t+b)/2
         translate(gc, -xcent + (w/2 + x)/xs, -ycent + (h/2 + y)/ys)
     end
-    c
+    gc
 end
 
 """
@@ -539,7 +539,7 @@ See also: [`rotate(p::Vec2, angle::Real, o::Vec2)`](@ref).
 @mustimplement rotate(gc::GraphicsContext, ::Real)
 
 """
-    rotate(gc::GraphicsContext, sx, sy)
+    scale(gc::GraphicsContext, sx, sy)
 
 Scale the user-space x-axis and y-axis by `sx` and `sy` respectively. The
 scaling takes places after any existing transformation.
@@ -888,13 +888,13 @@ rectangle(gc::GraphicsContext, user::BoundingBox) =
     rectangle(gc, user.xmin, user.ymin, width(user), height(user))
 
 """
-    circle(ctx::GraphicsContext, x, y, r)
+    circle(gc::GraphicsContext, x, y, r)
 
 Add a sub-path circle to the current path. The `x` and `y` specify the center
 coordinate of the circle, and the `r` specifies the radius.
 """
-circle(ctx::GraphicsContext, x::Real, y::Real, r::Real) =
-    arc(ctx, x, y, r, 0., 2pi)
+circle(gc::GraphicsContext, x::Real, y::Real, r::Real) =
+    arc(gc, x, y, r, 0., 2pi)
 
 """
     polygon(gc::GraphicsContext, verts::Matrix, idx::Vector)
