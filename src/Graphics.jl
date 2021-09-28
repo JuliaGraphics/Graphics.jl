@@ -193,7 +193,7 @@ Get the horizontal length of `obj`.
 width(bb::BoundingBox) = bb.xmax - bb.xmin # TODO: generalization with xmax()/xmin()
 
 """
-    hieght(obj) -> h
+    height(obj) -> h
 
 Get the vertical length of `obj`.
 """
