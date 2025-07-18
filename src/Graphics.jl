@@ -723,7 +723,7 @@ See also: [`rel_line_to`](@ref).
 @mustimplement line_to(gc::GraphicsContext, ::Real, ::Real)
 
 """
-curve_to(gc::GraphicsContext, c1x, c1y, c2x, c2y, x, y)
+    curve_to(gc::GraphicsContext, c1x, c1y, c2x, c2y, x, y)
 
 Add a cubic bezier curve to the path. The control points will be the current point, `(c1x, c1y)`, `(c2x, c2y)` and `(x, y)`. The current point will be moved to `(x, y)`.
 
@@ -732,7 +732,7 @@ See also: [`rel_curve_to`](@ref).
 @mustimplement curve_to(gc::GraphicsContext, ::Real, ::Real, ::Real, ::Real, ::Real, ::Real)
 
 """
-rel_curve_to(gc::GraphicsContex, Δc1x, Δc1y, Δc2x, Δc2y, Δx, Δy)
+    rel_curve_to(gc::GraphicsContex, Δc1x, Δc1y, Δc2x, Δc2y, Δx, Δy)
 
 Add a cubic bezier curve to the path. The control points will be the current point `(x, y)` and `(x, y) + [(Δc1x, Δc1y), (Δc2x, Δc2y), (Δx, Δy)]`. The current point will be moved to `(x + Δx, y + Δy)`.
 
